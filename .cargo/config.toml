@@ -2,7 +2,7 @@
 target = "avr-specs/avr-atmega328p.json"
 
 [target.'cfg(target_arch = "avr")']
-runner = "ravedude nano -cb 57600"
+runner = "./run.sh"
 
 [unstable]
 build-std = ["core"]
