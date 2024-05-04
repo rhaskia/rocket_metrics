@@ -1,5 +1,3 @@
-metrics
-=======
 
 Rust project for the _Arduino Nano_.
 
