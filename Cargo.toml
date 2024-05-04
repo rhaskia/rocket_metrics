@@ -12,6 +12,7 @@ bench = false
 
 [dependencies]
 panic-halt = "0.2.0"
+ufmt = "0.2.0"
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"
@@ -39,7 +40,3 @@ debug = true
 lto = true
 opt-level = "s"
 strip = true
-
-[build]
-command = "cargo build"
-post-build = "avr-objcopy -j .text -j .data -O ihex \"$1\" sketch.ino.hex && avrdude -p atmega328p -F -P COM5 -c arduino -U flash:w:sketch.ino.hex"

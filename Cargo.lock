@@ -129,6 +129,7 @@ dependencies = [
  "arduino-hal",
  "panic-halt",
  "proc-macro2",
+ "ufmt",
 ]
 
 [[package]]
