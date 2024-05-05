@@ -11,6 +11,7 @@ test = false
 bench = false
 
 [dependencies]
+libm = "0.2.8"
 panic-halt = "0.2.0"
 ufmt = "0.2.0"
 

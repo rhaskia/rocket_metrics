@@ -23,13 +23,15 @@ unsafe fn main() -> ! {
     let mut bmp = bmp280::Bmp280::new(calib);
     
     i2c.write(0x76, &[0xF4, 0x3F]).unwrap();
+    let adc_p = read24(&mut i2c, 0xF7);
+    bmp.zero(adc_p as i32);
     
     loop {
         let adc_t = read24(&mut i2c, 0xFA);
         let adc_p = read24(&mut i2c, 0xF7);
         let t = bmp.compensate_temperature(adc_t as i32);
-        let p = bmp.altitude_m(adc_p as i32);
-        ufmt::uwriteln!(&mut serial, "{:?}", (p * 100.) as i32);
+        let height = bmp.altitude_m(adc_p as i32);
+        ufmt::uwriteln!(&mut serial, "{:?}", (height * 1000.0) as i32).unwrap();
 
         arduino_hal::delay_ms(100);
     }

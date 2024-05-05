@@ -76,13 +76,13 @@ fn read_s16_le(i2c: &mut I2c, reg: u8) -> Result<i16, arduino_hal::i2c::Error> {
 pub struct Bmp280 {
     t_fine: i32,
     calib: Bmp280Calibration,
-    ground_pressure: f32,
+    pub ground_pressure: f32,
 }
 
 impl Bmp280 {
     pub fn new(calib: Bmp280Calibration) -> Self {
          Self {
-             ground_pressure:0.0,
+             ground_pressure:1.0,
              calib, t_fine: 0,
          }
     }
@@ -105,13 +105,12 @@ impl Bmp280 {
     pub fn compensate_pressure(&mut self, adc_p: i32) -> f32 {
         let var1 = (self.t_fine as i64) - 128000;
 
-        let var2 = var1 * var1 * self.calib.dig_p6 as i64
-            + ((var1 * self.calib.dig_p5 as i64) << 17)
-            + ((self.calib.dig_p4 as i64) << 35);
+        let var2 = var1 * var1 * (self.calib.dig_p6 as i64);
+        let var2 = var2 + ((var1 * (self.calib.dig_p5 as i64)) << 17);
+        let var2 = var2 + ((self.calib.dig_p4 as i64) << 35);
 
-        let var1 = (((var1 * var1 * (self.calib.dig_p3 as i64) >> 8) + ((var1 * (self.calib.dig_p2 as i64)) << 12))
-            * ((1i64 << 47) + var1)
-            * (self.calib.dig_p1 as i64)) >> 33;
+        let var1 = ((var1 * var1 * (self.calib.dig_p3 as i64)) >> 8) + ((var1 * (self.calib.dig_p2 as i64)) << 12);
+        let var1 = ((((1i64) << 47) + var1) * ((self.calib.dig_p1 as i64))) >> 33; 
 
         let p: i64 = 1048576 - adc_p as i64;
         let p = (((p << 31) - var2) * 3125) / var1;
@@ -124,31 +123,19 @@ impl Bmp280 {
         p as f32 / 256000.
     }
 
-    // pub fn zero(&mut self, adc_p: i32) -> f32 {
-    //     self.ground_pressure = self.compensate_pressure(adc_p) * 1000.;
-    //
-    //     self.ground_pressure
-    // }
+    pub fn zero(&mut self, adc_p: i32) {
+        self.ground_pressure = self.compensate_pressure(adc_p);
+    }
 
     pub fn altitude_m_relative(&mut self, adc_p: i32, sea_level_pa: f32) -> f32 {
-        let pressure = self.compensate_pressure(adc_p) * 1000.;
+        let pressure = self.compensate_pressure(adc_p);
+        
+        let diff = sea_level_pa;
 
-        let altitude = 44330. * (1. - pow_float(pressure / sea_level_pa, 0.1903));
-        altitude
+        (self.ground_pressure / pressure)
     }
 
     pub fn altitude_m(&mut self, adc_p: i32) -> f32 {
-        let pressure = self.ground_pressure;
-
-        self.altitude_m_relative(adc_p, pressure)
+        self.altitude_m_relative(adc_p, self.ground_pressure)
     }
-
-}
-
-fn pow_float(base: f32, exponent: f32) -> f32 {
-    let base_as_u32 = base.to_bits();
-    let exponent_as_u32 = exponent.to_bits();
-
-    let product_as_u32 = base_as_u32.wrapping_mul(exponent_as_u32);
-    f32::from_bits(product_as_u32)
 }
