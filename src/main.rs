@@ -21,33 +21,19 @@ unsafe fn main() -> ! {
     );
 
     let calib = Bmp280Calibration::new(&mut i2c).unwrap();
+    let mut bmp = bmp280::Bmp280::new(calib);
     i2c.write(0x76, &[0xF4, 0x3F]).unwrap();
     let mut accel = [0; 3];
     
     loop {
         let adc_t = read24(&mut i2c, 0xFA);
-        let t = compensate_temperature(adc_t as i32, &calib);
-        ufmt::uwriteln!(&mut serial, "{:?}", ((t - 32.0) * 500. / 9.) as i32);
+        let adc_p = read24(&mut i2c, 0xF7);
+        let t = bmp.compensate_temperature(adc_t as i32);
+        let p = bmp.compensate_pressure(adc_p as i32);
+        ufmt::uwriteln!(&mut serial, "{:?}", p as i32);
 
         arduino_hal::delay_ms(100);
     }
-}
-
-fn compensate_temperature(raw_temp: i32, calib: &Bmp280Calibration) -> f32 {
-    let mut adc_t = raw_temp;
-    // adc_t >>= 4;
-
-    let t1 = calib.dig_t1 as i32;
-    let t2 = calib.dig_t2 as i32;
-    let t3 = calib.dig_t3 as i32;
-
-    let var1 = (((adc_t >> 3) - (t1 << 1)) * t2) >> 11;
-    let var2 = (((((adc_t >> 4) - t1) * ((adc_t >> 4) - t1)) >> 12) * t3) >> 14;
-
-    let fine = var1 + var2;
-
-    let t = ((fine * 5 + 128) >> 8) as f32;
-    t / 100.
 }
 
 unsafe fn read24(i2c: &mut I2c, reg: u8) -> u32 {

@@ -84,19 +84,19 @@ impl Bmp280 {
         let var1 = (self.t_fine as i64) - 128000;
 
         let var2 = var1 * var1 * self.calib.dig_p6 as i64;
-        let var2 = var2 + ((var1 * self.calib.dig_p5 as i64) << 17);
+        let var2 = var2 + ((var1 * p5) << 17);
         let var2 = var2 + ((self.calib.dig_p4 as i64) << 35);
 
-        let var1 = ((var1 * var1 * (self.calib.dig_p3 as i64) >> 8) + ((var1 * (self.calib.dig_p2 as i64)) << 12));
-        let var1 = ((((1i64) << 47) + var1) * (self.calib.dig_p1 as i64)) >> 33;
+        let var1 = ((var1 * var1 * self.calib.dig_p3) >> 8) + ((var1 * self.calib.dig_p2) << 12);
+        let var1 = ((((1i64) << 47) + var1) * (self.calib.dig_p1)) >> 33;
 
         let p: i64 = 1048576 - adc_p as i64;
         let p = (((p << 31) - var2) * 3125) / var1;
 
-        let var1 = ((self.calib.dig_p9 as i64) * (p >> 13)) * (p >> 13) >> 25;
-        let var2 = ((self.calib.dig_p8 as i64) * p) >> 19;
+        let var1 = (self.calib.dig_p9 * (p >> 13) * (p >> 13)) >> 25;
+        let var2 = (self.calib.dig_p8 * p) >> 19;
 
-        let p = ((p + var1 + var2) >> 8) + ((self.calib.dig_p7 as i64) << 4);
+        let p = ((p + var1 + var2) >> 8) + (self.calib.dig_p7 << 4);
 
         p as f32 / 256000.
     }
